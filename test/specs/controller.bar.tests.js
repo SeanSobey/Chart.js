@@ -1,5 +1,10 @@
 describe('Chart.controllers.bar', function() {
-	describe('auto', jasmine.specsFromFixtures('controller.bar'));
+	describe('auto', jasmine.fixture.specs('controller.bar'));
+
+	it('should be registered as dataset controller', function() {
+		expect(typeof Chart.controllers.bar).toBe('function');
+		expect(typeof Chart.controllers.horizontalBar).toBe('function');
+	});
 
 	it('should be constructed', function() {
 		var chart = window.acquireChart({
@@ -734,17 +739,11 @@ describe('Chart.controllers.bar', function() {
 			{x: 89, y: 512},
 			{x: 217, y: 0}
 		].forEach(function(expected, i) {
-			expect(meta.data[i]._datasetIndex).toBe(1);
-			expect(meta.data[i]._index).toBe(i);
-			expect(meta.data[i]._xScale).toBe(chart.scales.firstXScaleID);
-			expect(meta.data[i]._yScale).toBe(chart.scales.firstYScaleID);
 			expect(meta.data[i]._model.x).toBeCloseToPixel(expected.x);
 			expect(meta.data[i]._model.y).toBeCloseToPixel(expected.y);
 			expect(meta.data[i]._model.base).toBeCloseToPixel(1024);
 			expect(meta.data[i]._model.width).toBeCloseToPixel(46);
 			expect(meta.data[i]._model).toEqual(jasmine.objectContaining({
-				datasetLabel: chart.data.datasets[1].label,
-				label: chart.data.labels[i],
 				backgroundColor: 'red',
 				borderSkipped: 'top',
 				borderColor: 'blue',
@@ -887,10 +886,8 @@ describe('Chart.controllers.bar', function() {
 						type: 'linear',
 						display: false,
 						stacked: true,
-						ticks: {
-							min: 50,
-							max: 100
-						}
+						min: 50,
+						max: 100
 					}]
 				}
 			}
@@ -1209,12 +1206,81 @@ describe('Chart.controllers.bar', function() {
 			options: {
 				legend: false,
 				title: false,
+				datasets: {
+					bar: {
+						barPercentage: 1,
+					}
+				},
 				scales: {
 					xAxes: [{
 						type: 'category',
 						display: false,
 						stacked: true,
+					}],
+					yAxes: [{
+						type: 'logarithmic',
+						display: false,
+						stacked: true
+					}]
+				}
+			}
+		});
+
+		var meta0 = chart.getDatasetMeta(0);
+
+		[
+			{b: 512, w: 102, x: 64, y: 512},
+			{b: 512, w: 102, x: 192, y: 118},
+			{b: 512, w: 102, x: 320, y: 512},
+			{b: 512, w: 102, x: 449, y: 118}
+		].forEach(function(values, i) {
+			expect(meta0.data[i]._model.base).toBeCloseToPixel(values.b);
+			expect(meta0.data[i]._model.width).toBeCloseToPixel(values.w);
+			expect(meta0.data[i]._model.x).toBeCloseToPixel(values.x);
+			expect(meta0.data[i]._model.y).toBeCloseToPixel(values.y);
+		});
+
+		var meta1 = chart.getDatasetMeta(1);
+
+		[
+			{b: 512, w: 102, x: 64, y: 102},
+			{b: 118, w: 102, x: 192, y: 102},
+			{b: 512, w: 102, x: 320, y: 512},
+			{b: 118, w: 102, x: 449, y: 0}
+		].forEach(function(values, i) {
+			expect(meta1.data[i]._model.base).toBeCloseToPixel(values.b);
+			expect(meta1.data[i]._model.width).toBeCloseToPixel(values.w);
+			expect(meta1.data[i]._model.x).toBeCloseToPixel(values.x);
+			expect(meta1.data[i]._model.y).toBeCloseToPixel(values.y);
+		});
+	});
+
+	it('should update elements when the scales are stacked and the y axis is logarithmic and data is strings', function() {
+		var chart = window.acquireChart({
+			type: 'bar',
+			data: {
+				datasets: [{
+					data: ['10', '100', '10', '100'],
+					label: 'dataset1'
+				}, {
+					data: ['100', '10', '0', '100'],
+					label: 'dataset2'
+				}],
+				labels: ['label1', 'label2', 'label3', 'label4']
+			},
+			options: {
+				legend: false,
+				title: false,
+				datasets: {
+					bar: {
 						barPercentage: 1,
+					}
+				},
+				scales: {
+					xAxes: [{
+						type: 'category',
+						display: false,
+						stacked: true,
 					}],
 					yAxes: [{
 						type: 'logarithmic',
@@ -1309,7 +1375,7 @@ describe('Chart.controllers.bar', function() {
 		var meta = chart.getDatasetMeta(1);
 		var bar = meta.data[0];
 
-		meta.controller.setHoverStyle(bar);
+		meta.controller.setHoverStyle(bar, 1, 0);
 		expect(bar._model.backgroundColor).toBe('rgb(230, 0, 0)');
 		expect(bar._model.borderColor).toBe('rgb(0, 0, 230)');
 		expect(bar._model.borderWidth).toBe(2);
@@ -1319,7 +1385,7 @@ describe('Chart.controllers.bar', function() {
 		chart.data.datasets[1].hoverBorderColor = 'rgb(0, 0, 0)';
 		chart.data.datasets[1].hoverBorderWidth = 5;
 
-		meta.controller.setHoverStyle(bar);
+		meta.controller.setHoverStyle(bar, 1, 0);
 		expect(bar._model.backgroundColor).toBe('rgb(128, 128, 128)');
 		expect(bar._model.borderColor).toBe('rgb(0, 0, 0)');
 		expect(bar._model.borderWidth).toBe(5);
@@ -1329,22 +1395,10 @@ describe('Chart.controllers.bar', function() {
 		chart.data.datasets[1].hoverBorderColor = ['rgb(9, 9, 9)', 'rgb(0, 0, 0)'];
 		chart.data.datasets[1].hoverBorderWidth = [2.5, 5];
 
-		meta.controller.setHoverStyle(bar);
+		meta.controller.setHoverStyle(bar, 1, 0);
 		expect(bar._model.backgroundColor).toBe('rgb(255, 255, 255)');
 		expect(bar._model.borderColor).toBe('rgb(9, 9, 9)');
 		expect(bar._model.borderWidth).toBe(2.5);
-
-		// Should allow a custom style
-		bar.custom = {
-			hoverBackgroundColor: 'rgb(255, 0, 0)',
-			hoverBorderColor: 'rgb(0, 255, 0)',
-			hoverBorderWidth: 1.5
-		};
-
-		meta.controller.setHoverStyle(bar);
-		expect(bar._model.backgroundColor).toBe('rgb(255, 0, 0)');
-		expect(bar._model.borderColor).toBe('rgb(0, 255, 0)');
-		expect(bar._model.borderWidth).toBe(1.5);
 	});
 
 	it('should remove a hover style from a bar', function() {
@@ -1372,13 +1426,21 @@ describe('Chart.controllers.bar', function() {
 
 		var meta = chart.getDatasetMeta(1);
 		var bar = meta.data[0];
+		var helpers = window.Chart.helpers;
 
 		// Change default
 		chart.options.elements.rectangle.backgroundColor = 'rgb(128, 128, 128)';
 		chart.options.elements.rectangle.borderColor = 'rgb(15, 15, 15)';
 		chart.options.elements.rectangle.borderWidth = 3.14;
 
-		// Remove to defaults
+		chart.update();
+		expect(bar._model.backgroundColor).toBe('rgb(128, 128, 128)');
+		expect(bar._model.borderColor).toBe('rgb(15, 15, 15)');
+		expect(bar._model.borderWidth).toBe(3.14);
+		meta.controller.setHoverStyle(bar, 1, 0);
+		expect(bar._model.backgroundColor).toBe(helpers.getHoverColor('rgb(128, 128, 128)'));
+		expect(bar._model.borderColor).toBe(helpers.getHoverColor('rgb(15, 15, 15)'));
+		expect(bar._model.borderWidth).toBe(3.14);
 		meta.controller.removeHoverStyle(bar);
 		expect(bar._model.backgroundColor).toBe('rgb(128, 128, 128)');
 		expect(bar._model.borderColor).toBe('rgb(15, 15, 15)');
@@ -1389,22 +1451,18 @@ describe('Chart.controllers.bar', function() {
 		chart.data.datasets[1].borderColor = ['rgb(9, 9, 9)', 'rgb(0, 0, 0)'];
 		chart.data.datasets[1].borderWidth = [2.5, 5];
 
+		chart.update();
+		expect(bar._model.backgroundColor).toBe('rgb(255, 255, 255)');
+		expect(bar._model.borderColor).toBe('rgb(9, 9, 9)');
+		expect(bar._model.borderWidth).toBe(2.5);
+		meta.controller.setHoverStyle(bar, 1, 0);
+		expect(bar._model.backgroundColor).toBe(helpers.getHoverColor('rgb(255, 255, 255)'));
+		expect(bar._model.borderColor).toBe(helpers.getHoverColor('rgb(9, 9, 9)'));
+		expect(bar._model.borderWidth).toBe(2.5);
 		meta.controller.removeHoverStyle(bar);
 		expect(bar._model.backgroundColor).toBe('rgb(255, 255, 255)');
 		expect(bar._model.borderColor).toBe('rgb(9, 9, 9)');
 		expect(bar._model.borderWidth).toBe(2.5);
-
-		// Should allow a custom style
-		bar.custom = {
-			backgroundColor: 'rgb(255, 0, 0)',
-			borderColor: 'rgb(0, 255, 0)',
-			borderWidth: 1.5
-		};
-
-		meta.controller.removeHoverStyle(bar);
-		expect(bar._model.backgroundColor).toBe('rgb(255, 0, 0)');
-		expect(bar._model.borderColor).toBe('rgb(0, 255, 0)');
-		expect(bar._model.borderWidth).toBe(1.5);
 	});
 
 	describe('Bar width', function() {
@@ -1424,15 +1482,16 @@ describe('Chart.controllers.bar', function() {
 			var chart = window.acquireChart(this.config);
 			var meta = chart.getDatasetMeta(0);
 			var xScale = chart.scales[meta.xAxisID];
+			var options = Chart.defaults.global.datasets.bar;
 
-			var categoryPercentage = xScale.options.categoryPercentage;
-			var barPercentage = xScale.options.barPercentage;
+			var categoryPercentage = options.categoryPercentage;
+			var barPercentage = options.barPercentage;
 			var stacked = xScale.options.stacked;
 
 			var totalBarWidth = 0;
 			for (var i = 0; i < chart.data.datasets.length; i++) {
 				var bars = chart.getDatasetMeta(i).data;
-				for (var j = xScale.minIndex; j <= xScale.maxIndex; j++) {
+				for (var j = xScale.min; j <= xScale.max; j++) {
 					totalBarWidth += bars[j]._model.width;
 				}
 				if (stacked) {
@@ -1453,10 +1512,8 @@ describe('Chart.controllers.bar', function() {
 				options: {
 					scales: {
 						xAxes: [{
-							ticks: {
-								min: 'March',
-								max: 'May',
-							},
+							min: 'March',
+							max: 'May',
 						}]
 					}
 				}
@@ -1470,10 +1527,8 @@ describe('Chart.controllers.bar', function() {
 				options: {
 					scales: {
 						xAxes: [{
-							ticks: {
-								min: 'March',
-								max: 'May',
-							}
+							min: 'March',
+							max: 'May',
 						}],
 						yAxes: [{
 							stacked: true
@@ -1502,14 +1557,15 @@ describe('Chart.controllers.bar', function() {
 			var meta = chart.getDatasetMeta(0);
 			var yScale = chart.scales[meta.yAxisID];
 
-			var categoryPercentage = yScale.options.categoryPercentage;
-			var barPercentage = yScale.options.barPercentage;
+			var config = meta.controller._config;
+			var categoryPercentage = config.categoryPercentage;
+			var barPercentage = config.barPercentage;
 			var stacked = yScale.options.stacked;
 
 			var totalBarHeight = 0;
 			for (var i = 0; i < chart.data.datasets.length; i++) {
 				var bars = chart.getDatasetMeta(i).data;
-				for (var j = yScale.minIndex; j <= yScale.maxIndex; j++) {
+				for (var j = yScale.min; j <= yScale.max; j++) {
 					totalBarHeight += bars[j]._model.height;
 				}
 				if (stacked) {
@@ -1530,10 +1586,8 @@ describe('Chart.controllers.bar', function() {
 				options: {
 					scales: {
 						yAxes: [{
-							ticks: {
-								min: 'March',
-								max: 'May',
-							},
+							min: 'March',
+							max: 'May',
 						}]
 					}
 				}
@@ -1550,10 +1604,8 @@ describe('Chart.controllers.bar', function() {
 							stacked: true
 						}],
 						yAxes: [{
-							ticks: {
-								min: 'March',
-								max: 'May',
-							}
+							min: 'March',
+							max: 'May',
 						}]
 					}
 				}
@@ -1578,11 +1630,15 @@ describe('Chart.controllers.bar', function() {
 						options: {
 							legend: false,
 							title: false,
+							datasets: {
+								bar: {
+									barThickness: barThickness
+								}
+							},
 							scales: {
 								xAxes: [{
 									id: 'x',
 									type: 'category',
-									barThickness: barThickness
 								}],
 								yAxes: [{
 									type: 'linear',
@@ -1600,7 +1656,7 @@ describe('Chart.controllers.bar', function() {
 						expected = barThickness;
 					} else {
 						var scale = chart.scales.x;
-						var options = chart.options.scales.xAxes[0];
+						var options = Chart.defaults.global.datasets.bar;
 						var categoryPercentage = options.categoryPercentage;
 						var barPercentage = options.barPercentage;
 						var tickInterval = scale.getPixelForTick(1) - scale.getPixelForTick(0);
@@ -1617,10 +1673,10 @@ describe('Chart.controllers.bar', function() {
 
 				it('should correctly set bar width if maxBarThickness is specified', function() {
 					var chart = this.chart;
-					var options = chart.options.scales.xAxes[0];
 					var i, ilen, meta;
 
-					options.maxBarThickness = 10;
+					chart.data.datasets[0].maxBarThickness = 10;
+					chart.data.datasets[1].maxBarThickness = 10;
 					chart.update();
 
 					for (i = 0, ilen = chart.data.datasets.length; i < ilen; ++i) {
@@ -1632,4 +1688,41 @@ describe('Chart.controllers.bar', function() {
 			});
 		});
 	});
+
+	it('minBarLength settings should be used on Y axis on bar chart', function() {
+		var minBarLength = 4;
+		var chart = window.acquireChart({
+			type: 'bar',
+			data: {
+				datasets: [{
+					minBarLength: minBarLength,
+					data: [0.05, -0.05, 10, 15, 20, 25, 30, 35]
+				}]
+			}
+		});
+
+		var data = chart.getDatasetMeta(0).data;
+
+		expect(data[0]._model.base - minBarLength).toEqual(data[0]._model.y);
+		expect(data[1]._model.base + minBarLength).toEqual(data[1]._model.y);
+	});
+
+	it('minBarLength settings should be used on X axis on horizontalBar chart', function() {
+		var minBarLength = 4;
+		var chart = window.acquireChart({
+			type: 'horizontalBar',
+			data: {
+				datasets: [{
+					minBarLength: minBarLength,
+					data: [0.05, -0.05, 10, 15, 20, 25, 30, 35]
+				}]
+			}
+		});
+
+		var data = chart.getDatasetMeta(0).data;
+
+		expect(data[0]._model.base + minBarLength).toEqual(data[0]._model.x);
+		expect(data[1]._model.base - minBarLength).toEqual(data[1]._model.x);
+	});
+
 });

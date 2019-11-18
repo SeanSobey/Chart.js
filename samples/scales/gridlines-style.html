@@ -3,7 +3,7 @@
 
 <head>
 	<title>Grid Lines Style Settings</title>
-	<script src="../../dist/Chart.bundle.js"></script>
+	<script src="../../dist/Chart.min.js"></script>
 	<script src="../utils.js"></script>
 	<style>
 	canvas{
@@ -49,9 +49,9 @@
 							drawBorder: false,
 							color: ['pink', 'red', 'orange', 'yellow', 'green', 'blue', 'indigo', 'purple']
 						},
+						min: 0,
+						max: 100,
 						ticks: {
-							min: 0,
-							max: 100,
 							stepSize: 10
 						}
 					}]

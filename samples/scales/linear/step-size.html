@@ -3,7 +3,7 @@
 
 <head>
 	<title>Line Chart</title>
-	<script src="../../../dist/Chart.bundle.js"></script>
+	<script src="../../../dist/Chart.min.js"></script>
 	<script src="../../utils.js"></script>
 	<style>
 	canvas{
@@ -94,10 +94,9 @@
 							display: true,
 							labelString: 'Value'
 						},
+						min: 0,
+						max: 100,
 						ticks: {
-							min: 0,
-							max: 100,
-
 							// forces step size to be 5 units
 							stepSize: 5
 						}

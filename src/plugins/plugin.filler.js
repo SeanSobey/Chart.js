@@ -37,10 +37,17 @@ var mappers = {
 		var x = boundary ? boundary.x : null;
 		var y = boundary ? boundary.y : null;
 
+		if (helpers.isArray(boundary)) {
+			return function(point, i) {
+				return boundary[i];
+			};
+		}
+
 		return function(point) {
 			return {
 				x: x === null ? point.x : x,
 				y: y === null ? point.y : y,
+				boundary: true
 			};
 		};
 	}
@@ -96,9 +103,9 @@ function decodeFill(el, index, count) {
 	}
 }
 
-function computeBoundary(source) {
+function computeLinearBoundary(source) {
 	var model = source.el._model || {};
-	var scale = source.el._scale || {};
+	var scale = source.scale || {};
 	var fill = source.fill;
 	var target = null;
 	var horizontal;
@@ -117,8 +124,6 @@ function computeBoundary(source) {
 		target = model.scaleTop === undefined ? scale.top : model.scaleTop;
 	} else if (model.scaleZero !== undefined) {
 		target = model.scaleZero;
-	} else if (scale.getBasePosition) {
-		target = scale.getBasePosition();
 	} else if (scale.getBasePixel) {
 		target = scale.getBasePixel();
 	}
@@ -128,16 +133,56 @@ function computeBoundary(source) {
 			return target;
 		}
 
-		if (typeof target === 'number' && isFinite(target)) {
+		if (helpers.isFinite(target)) {
 			horizontal = scale.isHorizontal();
 			return {
 				x: horizontal ? target : null,
-				y: horizontal ? null : target
+				y: horizontal ? null : target,
+				boundary: true
 			};
 		}
 	}
 
 	return null;
+}
+
+function computeCircularBoundary(source) {
+	var scale = source.scale;
+	var options = scale.options;
+	var length = scale.chart.data.labels.length;
+	var fill = source.fill;
+	var target = [];
+	var start, end, center, i, point;
+
+	if (!length) {
+		return null;
+	}
+
+	start = options.reverse ? scale.max : scale.min;
+	end = options.reverse ? scale.min : scale.max;
+	center = scale.getPointPositionForValue(0, start);
+	for (i = 0; i < length; ++i) {
+		point = fill === 'start' || fill === 'end'
+			? scale.getPointPositionForValue(i, fill === 'start' ? start : end)
+			: scale.getBasePosition(i);
+		if (options.gridLines.circular) {
+			point.cx = center.x;
+			point.cy = center.y;
+			point.angle = scale.getIndexAngle(i) - Math.PI / 2;
+		}
+		point.boundary = true;
+		target.push(point);
+	}
+	return target;
+}
+
+function computeBoundary(source) {
+	var scale = source.scale || {};
+
+	if (scale.getPointPositionForValue) {
+		return computeCircularBoundary(source);
+	}
+	return computeLinearBoundary(source);
 }
 
 function resolveTarget(sources, index, propagate) {
@@ -190,8 +235,9 @@ function isDrawable(point) {
 	return point && !point.skip;
 }
 
-function drawArea(ctx, curve0, curve1, len0, len1) {
-	var i;
+function drawArea(ctx, curve0, curve1, len0, len1, stepped, tension) {
+	const lineTo = stepped ? helpers.canvas._steppedLineTo : helpers.canvas._bezierCurveTo;
+	let i, cx, cy, r, target;
 
 	if (!len0 || !len1) {
 		return;
@@ -200,7 +246,22 @@ function drawArea(ctx, curve0, curve1, len0, len1) {
 	// building first area curve (normal)
 	ctx.moveTo(curve0[0].x, curve0[0].y);
 	for (i = 1; i < len0; ++i) {
-		helpers.canvas.lineTo(ctx, curve0[i - 1], curve0[i]);
+		target = curve0[i];
+		if (!target.boundary && (tension || stepped)) {
+			lineTo(ctx, curve0[i - 1], target, false, stepped);
+		} else {
+			ctx.lineTo(target.x, target.y);
+		}
+	}
+
+	if (curve1[0].angle !== undefined) {
+		cx = curve1[0].cx;
+		cy = curve1[0].cy;
+		r = Math.sqrt(Math.pow(curve1[0].x - cx, 2) + Math.pow(curve1[0].y - cy, 2));
+		for (i = len1 - 1; i > 0; --i) {
+			ctx.arc(cx, cy, r, curve1[i].angle, curve1[i - 1].angle, true);
+		}
+		return;
 	}
 
 	// joining the two area curves
@@ -208,34 +269,48 @@ function drawArea(ctx, curve0, curve1, len0, len1) {
 
 	// building opposite area curve (reverse)
 	for (i = len1 - 1; i > 0; --i) {
-		helpers.canvas.lineTo(ctx, curve1[i], curve1[i - 1], true);
+		target = curve1[i - 1];
+		if (!target.boundary && (tension || stepped)) {
+			lineTo(ctx, curve1[i], target, true, stepped);
+		} else {
+			ctx.lineTo(target.x, target.y);
+		}
 	}
 }
 
-function doFill(ctx, points, mapper, view, color, loop) {
-	var count = points.length;
-	var span = view.spanGaps;
-	var curve0 = [];
-	var curve1 = [];
-	var len0 = 0;
-	var len1 = 0;
-	var i, ilen, index, p0, p1, d0, d1;
+function doFill(ctx, points, mapper, el) {
+	const count = points.length;
+	const view = el._view;
+	const loop = el._loop;
+	const span = view.spanGaps;
+	const stepped = view.steppedLine;
+	const tension = view.tension;
+	let curve0 = [];
+	let curve1 = [];
+	let len0 = 0;
+	let len1 = 0;
+	let i, ilen, index, p0, p1, d0, d1, loopOffset;
 
 	ctx.beginPath();
 
-	for (i = 0, ilen = (count + !!loop); i < ilen; ++i) {
+	for (i = 0, ilen = count; i < ilen; ++i) {
 		index = i % count;
 		p0 = points[index]._view;
 		p1 = mapper(p0, index, view);
 		d0 = isDrawable(p0);
 		d1 = isDrawable(p1);
 
+		if (loop && loopOffset === undefined && d0) {
+			loopOffset = i + 1;
+			ilen = count + loopOffset;
+		}
+
 		if (d0 && d1) {
 			len0 = curve0.push(p0);
 			len1 = curve1.push(p1);
 		} else if (len0 && len1) {
 			if (!span) {
-				drawArea(ctx, curve0, curve1, len0, len1);
+				drawArea(ctx, curve0, curve1, len0, len1, stepped, tension);
 				len0 = len1 = 0;
 				curve0 = [];
 				curve1 = [];
@@ -250,10 +325,10 @@ function doFill(ctx, points, mapper, view, color, loop) {
 		}
 	}
 
-	drawArea(ctx, curve0, curve1, len0, len1);
+	drawArea(ctx, curve0, curve1, len0, len1, stepped, tension);
 
 	ctx.closePath();
-	ctx.fillStyle = color;
+	ctx.fillStyle = view.backgroundColor;
 	ctx.fill();
 }
 
@@ -276,6 +351,7 @@ module.exports = {
 					visible: chart.isDatasetVisible(i),
 					fill: decodeFill(el, i, count),
 					chart: chart,
+					scale: meta.controller.getScaleForId(meta.yAxisID) || chart.scale,
 					el: el
 				};
 			}
@@ -296,23 +372,27 @@ module.exports = {
 		}
 	},
 
-	beforeDatasetDraw: function(chart, args) {
-		var meta = args.meta.$filler;
-		if (!meta) {
-			return;
-		}
-
+	beforeDatasetsDraw: function(chart) {
+		var metasets = chart._getSortedVisibleDatasetMetas();
 		var ctx = chart.ctx;
-		var el = meta.el;
-		var view = el._view;
-		var points = el._children || [];
-		var mapper = meta.mapper;
-		var color = view.backgroundColor || defaults.global.defaultColor;
+		var meta, i, el, points, mapper;
 
-		if (mapper && color && points.length) {
-			helpers.canvas.clipArea(ctx, chart.chartArea);
-			doFill(ctx, points, mapper, view, color, el._loop);
-			helpers.canvas.unclipArea(ctx);
+		for (i = metasets.length - 1; i >= 0; --i) {
+			meta = metasets[i].$filler;
+
+			if (!meta || !meta.visible) {
+				continue;
+			}
+
+			el = meta.el;
+			points = el._children || [];
+			mapper = meta.mapper;
+
+			if (mapper && points.length) {
+				helpers.canvas.clipArea(ctx, chart.chartArea);
+				doFill(ctx, points, mapper, el);
+				helpers.canvas.unclipArea(ctx);
+			}
 		}
 	}
 };

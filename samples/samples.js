@@ -19,6 +19,9 @@
 		}, {
 			title: 'Stacked groups',
 			path: 'charts/bar/stacked-group.html'
+		}, {
+			title: 'Floating',
+			path: 'charts/bar/float.html'
 		}]
 	}, {
 		title: 'Line charts',
@@ -128,6 +131,9 @@
 			title: 'Grid lines style',
 			path: 'scales/gridlines-style.html'
 		}, {
+			title: 'Scriptable Grid lines',
+			path: 'scales/gridlines-scriptable.html'
+		}, {
 			title: 'Multiline labels',
 			path: 'scales/multiline-labels.html'
 		}, {
@@ -139,6 +145,9 @@
 		}, {
 			title: 'Toggle Scale Type',
 			path: 'scales/toggle-scale-type.html'
+		}, {
+			title: 'Axes Labels',
+			path: 'scales/axes-labels.html'
 		}]
 	}, {
 		title: 'Legend',
@@ -148,6 +157,9 @@
 		}, {
 			title: 'Point style',
 			path: 'legend/point-style.html'
+		}, {
+			title: 'Callbacks',
+			path: 'legend/callbacks.html'
 		}]
 	}, {
 		title: 'Tooltip',
@@ -176,8 +188,23 @@
 	}, {
 		title: 'Scriptable',
 		items: [{
+			title: 'Bar Chart',
+			path: 'scriptable/bar.html'
+		}, {
 			title: 'Bubble Chart',
 			path: 'scriptable/bubble.html'
+		}, {
+			title: 'Pie Chart',
+			path: 'scriptable/pie.html'
+		}, {
+			title: 'Line Chart',
+			path: 'scriptable/line.html'
+		}, {
+			title: 'Polar Area Chart',
+			path: 'scriptable/polar.html'
+		}, {
+			title: 'Radar Chart',
+			path: 'scriptable/radar.html'
 		}]
 	}, {
 		title: 'Advanced',
@@ -185,8 +212,14 @@
 			title: 'Progress bar',
 			path: 'advanced/progress-bar.html'
 		}, {
-			title: 'Data labelling (plugin)',
-			path: 'advanced/data-labelling.html'
+			title: 'Content Security Policy',
+			path: 'advanced/content-security-policy.html'
+		}, {
+			title: 'Polar Area Radial Gradient',
+			path: 'advanced/radial-gradient.html'
+		}, {
+			title: 'Line Gradient',
+			path: 'advanced/line-gradient.html'
 		}]
 	}];
 

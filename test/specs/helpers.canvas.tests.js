@@ -1,6 +1,8 @@
 'use strict';
 
 describe('Chart.helpers.canvas', function() {
+	describe('auto', jasmine.fixture.specs('helpers.canvas'));
+
 	var helpers = Chart.helpers;
 
 	describe('clear', function() {
@@ -21,30 +23,17 @@ describe('Chart.helpers.canvas', function() {
 		});
 	});
 
-	describe('roundedRect', function() {
-		it('should create a rounded rectangle path', function() {
-			var context = window.createMockContext();
+	describe('isPointInArea', function() {
+		it('should determine if a point is in the area', function() {
+			var isPointInArea = helpers.canvas._isPointInArea;
+			var area = {left: 0, top: 0, right: 512, bottom: 256};
 
-			helpers.canvas.roundedRect(context, 10, 20, 30, 40, 5);
-
-			expect(context.getCalls()).toEqual([
-				{name: 'moveTo', args: [15, 20]},
-				{name: 'lineTo', args: [35, 20]},
-				{name: 'quadraticCurveTo', args: [40, 20, 40, 25]},
-				{name: 'lineTo', args: [40, 55]},
-				{name: 'quadraticCurveTo', args: [40, 60, 35, 60]},
-				{name: 'lineTo', args: [15, 60]},
-				{name: 'quadraticCurveTo', args: [10, 60, 10, 55]},
-				{name: 'lineTo', args: [10, 25]},
-				{name: 'quadraticCurveTo', args: [10, 20, 15, 20]}
-			]);
-		});
-		it('should optimize path if radius is 0', function() {
-			var context = window.createMockContext();
-
-			helpers.canvas.roundedRect(context, 10, 20, 30, 40, 0);
-
-			expect(context.getCalls()).toEqual([{name: 'rect', args: [10, 20, 30, 40]}]);
+			expect(isPointInArea({x: 0, y: 0}, area)).toBe(true);
+			expect(isPointInArea({x: -1e-12, y: -1e-12}, area)).toBe(true);
+			expect(isPointInArea({x: 512, y: 256}, area)).toBe(true);
+			expect(isPointInArea({x: 512 + 1e-12, y: 256 + 1e-12}, area)).toBe(true);
+			expect(isPointInArea({x: -1e-3, y: 0}, area)).toBe(false);
+			expect(isPointInArea({x: 0, y: 256 + 1e-3}, area)).toBe(false);
 		});
 	});
 });

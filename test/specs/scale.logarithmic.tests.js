@@ -1,3 +1,7 @@
+function getLabels(scale) {
+	return scale.ticks.map(t => t.label);
+}
+
 describe('Logarithmic Scale tests', function() {
 	it('should register the constructor with the scale service', function() {
 		var Constructor = Chart.scaleService.getScaleConstructor('logarithmic');
@@ -10,7 +14,7 @@ describe('Logarithmic Scale tests', function() {
 		expect(defaultConfig).toEqual({
 			display: true,
 			gridLines: {
-				color: 'rgba(0, 0, 0, 0.1)',
+				color: 'rgba(0,0,0,0.1)',
 				drawBorder: true,
 				drawOnChartArea: true,
 				drawTicks: true,
@@ -18,23 +22,19 @@ describe('Logarithmic Scale tests', function() {
 				lineWidth: 1,
 				offsetGridLines: false,
 				display: true,
-				zeroLineColor: 'rgba(0,0,0,0.25)',
-				zeroLineWidth: 1,
-				zeroLineBorderDash: [],
-				zeroLineBorderDashOffset: 0.0,
 				borderDash: [],
 				borderDashOffset: 0.0
 			},
 			position: 'left',
 			offset: false,
+			reverse: false,
+			beginAtZero: false,
 			scaleLabel: Chart.defaults.scale.scaleLabel,
 			ticks: {
-				beginAtZero: false,
 				minRotation: 0,
 				maxRotation: 50,
 				mirror: false,
 				padding: 0,
-				reverse: false,
 				display: true,
 				callback: defaultConfig.ticks.callback, // make this nicer, then check explicitly below
 				autoSkip: true,
@@ -457,9 +457,9 @@ describe('Logarithmic Scale tests', function() {
 					yAxes: [{
 						id: 'yScale',
 						type: 'logarithmic',
+						min: 10,
+						max: 1010,
 						ticks: {
-							min: 10,
-							max: 1010,
 							callback: function(value) {
 								return value;
 							}
@@ -473,8 +473,70 @@ describe('Logarithmic Scale tests', function() {
 		var tickCount = yScale.ticks.length;
 		expect(yScale.min).toBe(10);
 		expect(yScale.max).toBe(1010);
-		expect(yScale.ticks[0]).toBe(1010);
-		expect(yScale.ticks[tickCount - 1]).toBe(10);
+		expect(yScale.ticks[0].value).toBe(1010);
+		expect(yScale.ticks[tickCount - 1].value).toBe(10);
+	});
+
+	it('should ignore negative min and max options', function() {
+		var chart = window.acquireChart({
+			type: 'bar',
+			data: {
+				datasets: [{
+					data: [1, 1, 1, 2, 1, 0]
+				}],
+				labels: []
+			},
+			options: {
+				scales: {
+					yAxes: [{
+						id: 'yScale',
+						type: 'logarithmic',
+						min: -10,
+						max: -1010,
+						ticks: {
+							callback: function(value) {
+								return value;
+							}
+						}
+					}]
+				}
+			}
+		});
+
+		var yScale = chart.scales.yScale;
+		expect(yScale.min).toBe(0);
+		expect(yScale.max).toBe(2);
+	});
+
+	it('should ignore invalid min and max options', function() {
+		var chart = window.acquireChart({
+			type: 'bar',
+			data: {
+				datasets: [{
+					data: [1, 1, 1, 2, 1, 0]
+				}],
+				labels: ['a', 'b', 'c', 'd', 'e', 'f']
+			},
+			options: {
+				scales: {
+					yAxes: [{
+						id: 'yScale',
+						type: 'logarithmic',
+						min: 'zero',
+						max: null,
+						ticks: {
+							callback: function(value) {
+								return value;
+							}
+						}
+					}]
+				}
+			}
+		});
+
+		var yScale = chart.scales.yScale;
+		expect(yScale.min).toBe(0);
+		expect(yScale.max).toBe(2);
 	});
 
 	it('should generate tick marks', function() {
@@ -502,11 +564,10 @@ describe('Logarithmic Scale tests', function() {
 		});
 
 		// Counts down because the lines are drawn top to bottom
-		expect(chart.scales.yScale).toEqual(jasmine.objectContaining({
-			ticks: [80, 70, 60, 50, 40, 30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
-			start: 1,
-			end: 80
-		}));
+		var scale = chart.scales.yScale;
+		expect(getLabels(scale)).toEqual([80, 70, 60, 50, 40, 30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+		expect(scale.start).toEqual(1);
+		expect(scale.end).toEqual(80);
 	});
 
 	it('should generate tick marks when 0 values are present', function() {
@@ -533,12 +594,11 @@ describe('Logarithmic Scale tests', function() {
 			}
 		});
 
+		var scale = chart.scales.yScale;
 		// Counts down because the lines are drawn top to bottom
-		expect(chart.scales.yScale).toEqual(jasmine.objectContaining({
-			ticks: [30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.9, 0.8, 0],
-			start: 0,
-			end: 30
-		}));
+		expect(getLabels(scale)).toEqual([30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.9, 0.8, 0]);
+		expect(scale.start).toEqual(0);
+		expect(scale.end).toEqual(30);
 	});
 
 
@@ -556,8 +616,8 @@ describe('Logarithmic Scale tests', function() {
 					yAxes: [{
 						id: 'yScale',
 						type: 'logarithmic',
+						reverse: true,
 						ticks: {
-							reverse: true,
 							callback: function(value) {
 								return value;
 							}
@@ -567,12 +627,10 @@ describe('Logarithmic Scale tests', function() {
 			}
 		});
 
-		// Counts down because the lines are drawn top to bottom
-		expect(chart.scales.yScale).toEqual(jasmine.objectContaining({
-			ticks: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80],
-			start: 80,
-			end: 1
-		}));
+		var scale = chart.scales.yScale;
+		expect(getLabels(scale)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50, 60, 70, 80]);
+		expect(scale.start).toEqual(80);
+		expect(scale.end).toEqual(1);
 	});
 
 	it('should generate tick marks in the correct order in reversed mode when 0 values are present', function() {
@@ -589,8 +647,8 @@ describe('Logarithmic Scale tests', function() {
 					yAxes: [{
 						id: 'yScale',
 						type: 'logarithmic',
+						reverse: true,
 						ticks: {
-							reverse: true,
 							callback: function(value) {
 								return value;
 							}
@@ -600,12 +658,10 @@ describe('Logarithmic Scale tests', function() {
 			}
 		});
 
-		// Counts down because the lines are drawn top to bottom
-		expect(chart.scales.yScale).toEqual(jasmine.objectContaining({
-			ticks: [0, 9, 10, 20, 30],
-			start: 30,
-			end: 0
-		}));
+		var scale = chart.scales.yScale;
+		expect(getLabels(scale)).toEqual([0, 9, 10, 20, 30]);
+		expect(scale.start).toEqual(30);
+		expect(scale.end).toEqual(0);
 	});
 
 	it('should build labels using the default template', function() {
@@ -627,7 +683,7 @@ describe('Logarithmic Scale tests', function() {
 			}
 		});
 
-		expect(chart.scales.yScale.ticks).toEqual(['8e+1', '', '', '5e+1', '', '', '2e+1', '1e+1', '', '', '', '', '5e+0', '', '', '2e+0', '1e+0', '0']);
+		expect(getLabels(chart.scales.yScale)).toEqual(['8e+1', '', '', '5e+1', '', '', '2e+1', '1e+1', '', '', '', '', '5e+0', '', '', '2e+0', '1e+0', '0']);
 	});
 
 	it('should build labels using the user supplied callback', function() {
@@ -655,7 +711,7 @@ describe('Logarithmic Scale tests', function() {
 		});
 
 		// Just the index
-		expect(chart.scales.yScale.ticks).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16']);
+		expect(getLabels(chart.scales.yScale)).toEqual(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16']);
 	});
 
 	it('should correctly get the correct label for a data item', function() {
@@ -687,7 +743,7 @@ describe('Logarithmic Scale tests', function() {
 			}
 		});
 
-		expect(chart.scales.yScale1.getLabelForIndex(0, 2)).toBe(150);
+		expect(chart.scales.yScale0.getLabelForValue(150)).toBe(150);
 	});
 
 	describe('when', function() {
@@ -725,26 +781,22 @@ describe('Logarithmic Scale tests', function() {
 				axis: 'y',
 				scale: {
 					yAxes: [{
-						ticks: {
-							min: 0
-						}
+						min: 0
 					}]
 				},
 				firstTick: 0,
-				describe: 'all stacks are defined and ticks.min: 0'
+				describe: 'all stacks are defined and min: 0'
 			},
 			{
 				axis: 'y',
 				data: dataWithEmptyStacks,
 				scale: {
 					yAxes: [{
-						ticks: {
-							min: 0
-						}
+						min: 0
 					}]
 				},
 				firstTick: 0,
-				describe: 'not stacks are defined and ticks.min: 0'
+				describe: 'not stacks are defined and min: 0'
 			},
 			{
 				axis: 'x',
@@ -761,26 +813,22 @@ describe('Logarithmic Scale tests', function() {
 				axis: 'x',
 				scale: {
 					xAxes: [{
-						ticks: {
-							min: 0
-						}
+						min: 0
 					}]
 				},
 				firstTick: 0,
-				describe: 'all stacks are defined and ticks.min: 0'
+				describe: 'all stacks are defined and min: 0'
 			},
 			{
 				axis: 'x',
 				data: dataWithEmptyStacks,
 				scale: {
 					xAxes: [{
-						ticks: {
-							min: 0
-						}
+						min: 0
 					}]
 				},
 				firstTick: 0,
-				describe: 'not all stacks are defined and ticks.min: 0'
+				describe: 'not all stacks are defined and min: 0'
 			},
 		];
 		config.forEach(function(setup) {
@@ -800,6 +848,8 @@ describe('Logarithmic Scale tests', function() {
 				type: 'logarithmic'
 			}];
 			Chart.helpers.extend(scaleConfig, setup.scale);
+			scaleConfig[setup.axis + 'Axes'][0].type = 'logarithmic';
+
 			var description = 'dataset has stack option and ' + setup.describe
 				+ ' and axis is "' + setup.axis + '";';
 			describe(description, function() {
@@ -822,21 +872,21 @@ describe('Logarithmic Scale tests', function() {
 					var start = chart.chartArea[chartStart];
 					var end = chart.chartArea[chartEnd];
 
-					expect(scale.getPixelForValue(firstTick, 0, 0)).toBe(start);
-					expect(scale.getPixelForValue(lastTick, 0, 0)).toBe(end);
+					expect(scale.getPixelForValue(firstTick)).toBeCloseToPixel(start);
+					expect(scale.getPixelForValue(lastTick)).toBeCloseToPixel(end);
 
 					expect(scale.getValueForPixel(start)).toBeCloseTo(firstTick, 4);
 					expect(scale.getValueForPixel(end)).toBeCloseTo(lastTick, 4);
 
-					chart.scales[axisID].options.ticks.reverse = true; // Reverse mode
+					chart.scales[axisID].options.reverse = true; // Reverse mode
 					chart.update();
 
 					// chartArea might have been resized in update
 					start = chart.chartArea[chartEnd];
 					end = chart.chartArea[chartStart];
 
-					expect(scale.getPixelForValue(firstTick, 0, 0)).toBe(start);
-					expect(scale.getPixelForValue(lastTick, 0, 0)).toBe(end);
+					expect(scale.getPixelForValue(firstTick)).toBeCloseToPixel(start);
+					expect(scale.getPixelForValue(lastTick)).toBeCloseToPixel(end);
 
 					expect(scale.getValueForPixel(start)).toBeCloseTo(firstTick, 4);
 					expect(scale.getValueForPixel(end)).toBeCloseTo(lastTick, 4);
@@ -851,14 +901,14 @@ describe('Logarithmic Scale tests', function() {
 				dataset: [],
 				firstTick: 1, // value of the first tick
 				lastTick: 10, // value of the last tick
-				describe: 'empty dataset, without ticks.min/max'
+				describe: 'empty dataset, without min/max'
 			},
 			{
 				dataset: [],
 				scale: {stacked: true},
 				firstTick: 1,
 				lastTick: 10,
-				describe: 'empty dataset, without ticks.min/max, with stacked: true'
+				describe: 'empty dataset, without min/max, with stacked: true'
 			},
 			{
 				data: {
@@ -870,7 +920,7 @@ describe('Logarithmic Scale tests', function() {
 				type: 'bar',
 				firstTick: 1,
 				lastTick: 10,
-				describe: 'empty dataset with stack option, without ticks.min/max'
+				describe: 'empty dataset with stack option, without min/max'
 			},
 			{
 				data: {
@@ -882,28 +932,28 @@ describe('Logarithmic Scale tests', function() {
 				type: 'horizontalBar',
 				firstTick: 1,
 				lastTick: 10,
-				describe: 'empty dataset with stack option, without ticks.min/max'
+				describe: 'empty dataset with stack option, without min/max'
 			},
 			{
 				dataset: [],
-				scale: {ticks: {min: 1}},
+				scale: {min: 1},
 				firstTick: 1,
 				lastTick: 10,
-				describe: 'empty dataset, ticks.min: 1, without ticks.max'
+				describe: 'empty dataset, min: 1, without max'
 			},
 			{
 				dataset: [],
-				scale: {ticks: {max: 80}},
+				scale: {max: 80},
 				firstTick: 1,
 				lastTick: 80,
-				describe: 'empty dataset, ticks.max: 80, without ticks.min'
+				describe: 'empty dataset, max: 80, without min'
 			},
 			{
 				dataset: [],
-				scale: {ticks: {max: 0.8}},
+				scale: {max: 0.8},
 				firstTick: 0.01,
 				lastTick: 0.8,
-				describe: 'empty dataset, ticks.max: 0.8, without ticks.min'
+				describe: 'empty dataset, max: 0.8, without min'
 			},
 			{
 				dataset: [{x: 10, y: 10}, {x: 5, y: 5}, {x: 1, y: 1}, {x: 25, y: 25}, {x: 78, y: 78}],
@@ -964,22 +1014,22 @@ describe('Logarithmic Scale tests', function() {
 						var start = chart.chartArea[axis.start];
 						var end = chart.chartArea[axis.end];
 
-						expect(scale.getPixelForValue(firstTick, 0, 0)).toBe(start);
-						expect(scale.getPixelForValue(lastTick, 0, 0)).toBe(end);
-						expect(scale.getPixelForValue(0, 0, 0)).toBe(start); // 0 is invalid, put it at the start.
+						expect(scale.getPixelForValue(firstTick, 0, 0)).toBeCloseToPixel(start);
+						expect(scale.getPixelForValue(lastTick, 0, 0)).toBeCloseToPixel(end);
+						expect(scale.getPixelForValue(0, 0, 0)).toBeCloseToPixel(start); // 0 is invalid, put it at the start.
 
 						expect(scale.getValueForPixel(start)).toBeCloseTo(firstTick, 4);
 						expect(scale.getValueForPixel(end)).toBeCloseTo(lastTick, 4);
 
-						chart.scales[axisID].options.ticks.reverse = true; // Reverse mode
+						chart.scales[axisID].options.reverse = true; // Reverse mode
 						chart.update();
 
 						// chartArea might have been resized in update
 						start = chart.chartArea[axis.end];
 						end = chart.chartArea[axis.start];
 
-						expect(scale.getPixelForValue(firstTick, 0, 0)).toBe(start);
-						expect(scale.getPixelForValue(lastTick, 0, 0)).toBe(end);
+						expect(scale.getPixelForValue(firstTick, 0, 0)).toBeCloseToPixel(start);
+						expect(scale.getPixelForValue(lastTick, 0, 0)).toBeCloseToPixel(end);
 
 						expect(scale.getValueForPixel(start)).toBeCloseTo(firstTick, 4);
 						expect(scale.getValueForPixel(end)).toBeCloseTo(lastTick, 4);
@@ -993,24 +1043,24 @@ describe('Logarithmic Scale tests', function() {
 		var config = [
 			{
 				dataset: [],
-				scale: {ticks: {min: 0}},
+				scale: {min: 0},
 				firstTick: 1, // value of the first tick
 				lastTick: 10, // value of the last tick
-				describe: 'empty dataset, ticks.min: 0, without ticks.max'
+				describe: 'empty dataset, min: 0, without max'
 			},
 			{
 				dataset: [],
-				scale: {ticks: {min: 0, max: 80}},
+				scale: {min: 0, max: 80},
 				firstTick: 1,
 				lastTick: 80,
-				describe: 'empty dataset, ticks.min: 0, ticks.max: 80'
+				describe: 'empty dataset, min: 0, max: 80'
 			},
 			{
 				dataset: [],
-				scale: {ticks: {min: 0, max: 0.8}},
+				scale: {min: 0, max: 0.8},
 				firstTick: 0.1,
 				lastTick: 0.8,
-				describe: 'empty dataset, ticks.min: 0, ticks.max: 0.8'
+				describe: 'empty dataset, min: 0, max: 0.8'
 			},
 			{
 				dataset: [{x: 0, y: 0}, {x: 10, y: 10}, {x: 1.2, y: 1.2}, {x: 25, y: 25}, {x: 78, y: 78}],
@@ -1026,17 +1076,17 @@ describe('Logarithmic Scale tests', function() {
 			},
 			{
 				dataset: [{x: 10, y: 10}, {x: 1.2, y: 1.2}, {x: 25, y: 25}, {x: 78, y: 78}],
-				scale: {ticks: {min: 0}},
+				scale: {min: 0},
 				firstTick: 1,
 				lastTick: 80,
-				describe: 'dataset min point {x: 1.2, y: 1.2}, max point {x:78, y:78}, ticks.min: 0'
+				describe: 'dataset min point {x: 1.2, y: 1.2}, max point {x:78, y:78}, min: 0'
 			},
 			{
 				dataset: [{x: 10, y: 10}, {x: 6.3, y: 6.3}, {x: 25, y: 25}, {x: 78, y: 78}],
-				scale: {ticks: {min: 0}},
+				scale: {min: 0},
 				firstTick: 6,
 				lastTick: 80,
-				describe: 'dataset min point {x: 6.3, y: 6.3}, max point {x:78, y:78}, ticks.min: 0'
+				describe: 'dataset min point {x: 6.3, y: 6.3}, max point {x:78, y:78}, min: 0'
 			},
 		];
 		config.forEach(function(setup) {
@@ -1093,24 +1143,24 @@ describe('Logarithmic Scale tests', function() {
 						var end = chart.chartArea[axis.end];
 						var sign = scale.isHorizontal() ? 1 : -1;
 
-						expect(scale.getPixelForValue(0, 0, 0)).toBe(start);
-						expect(scale.getPixelForValue(lastTick, 0, 0)).toBe(end);
-						expect(scale.getPixelForValue(firstTick, 0, 0)).toBe(start + sign * fontSize);
+						expect(scale.getPixelForValue(0, 0, 0)).toBeCloseToPixel(start);
+						expect(scale.getPixelForValue(lastTick, 0, 0)).toBeCloseToPixel(end);
+						expect(scale.getPixelForValue(firstTick, 0, 0)).toBeCloseToPixel(start + sign * fontSize);
 
 						expect(scale.getValueForPixel(start)).toBeCloseTo(0, 4);
 						expect(scale.getValueForPixel(end)).toBeCloseTo(lastTick, 4);
 						expect(scale.getValueForPixel(start + sign * fontSize)).toBeCloseTo(firstTick, 4);
 
-						chart.scales[axisID].options.ticks.reverse = true; // Reverse mode
+						chart.scales[axisID].options.reverse = true; // Reverse mode
 						chart.update();
 
 						// chartArea might have been resized in update
 						start = chart.chartArea[axis.end];
 						end = chart.chartArea[axis.start];
 
-						expect(scale.getPixelForValue(0, 0, 0)).toBe(start);
-						expect(scale.getPixelForValue(lastTick, 0, 0)).toBe(end);
-						expect(scale.getPixelForValue(firstTick, 0, 0)).toBe(start - sign * fontSize, 4);
+						expect(scale.getPixelForValue(0, 0, 0)).toBeCloseToPixel(start);
+						expect(scale.getPixelForValue(lastTick, 0, 0)).toBeCloseToPixel(end);
+						expect(scale.getPixelForValue(firstTick, 0, 0)).toBeCloseToPixel(start - sign * fontSize, 4);
 
 						expect(scale.getValueForPixel(start)).toBeCloseTo(0, 4);
 						expect(scale.getValueForPixel(end)).toBeCloseTo(lastTick, 4);

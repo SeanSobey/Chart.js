@@ -41,11 +41,11 @@ Dataset controllers must implement the following interface.
 
     // Update the elements in response to new data
     // @param reset : if true, put the elements into a reset state so they can animate to their final values
-    update: function(reset) {},
+    update: function(reset) {}
 }
 ```
 
-The following methods may optionally be overridden by derived dataset controllers
+The following methods may optionally be overridden by derived dataset controllers.
 ```javascript
 {
     // Initializes the controller
@@ -67,6 +67,7 @@ Extending or replacing an existing controller type is easy. Simply replace the c
 The built in controller types are:
 * `Chart.controllers.line`
 * `Chart.controllers.bar`
+* `Chart.controllers.horizontalBar`
 * `Chart.controllers.radar`
 * `Chart.controllers.doughnut`
 * `Chart.controllers.polarArea`
@@ -79,6 +80,10 @@ For example, to derive a new chart type that extends from a bubble chart, you wo
 // We look for the defaults by doing Chart.defaults[chartType]
 // It looks like a bug exists when the defaults don't exist
 Chart.defaults.derivedBubble = Chart.defaults.bubble;
+
+// Sets the default dataset config for 'derivedBubble' to be the same as the bubble dataset defaults.
+// It looks like a bug exists when the dataset defaults don't exist
+Chart.defaults.global.datasets.derivedBubble = Chart.defaults.global.datasets.bubble;
 
 // I think the recommend using Chart.controllers.bubble.extend({ extensions here });
 var custom = Chart.controllers.bubble.extend({
@@ -108,7 +113,7 @@ Chart.controllers.derivedBubble = custom;
 new Chart(ctx, {
     type: 'derivedBubble',
     data: data,
-    options: options,
+    options: options
 });
 ```
 

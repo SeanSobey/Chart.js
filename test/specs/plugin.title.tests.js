@@ -1,5 +1,7 @@
 // Test the rectangle element
 
+var Title = Chart.plugins.getAll().find(p => p.id === 'title')._element;
+
 describe('Title block tests', function() {
 	it('Should have the correct default config', function() {
 		expect(Chart.defaults.global.title).toEqual({
@@ -8,7 +10,6 @@ describe('Title block tests', function() {
 			fullWidth: true,
 			weight: 2000,
 			fontStyle: 'bold',
-			lineHeight: 1.2,
 			padding: 10,
 			text: ''
 		});
@@ -20,7 +21,7 @@ describe('Title block tests', function() {
 		var options = Chart.helpers.clone(Chart.defaults.global.title);
 		options.text = 'My title';
 
-		var title = new Chart.Title({
+		var title = new Title({
 			chart: chart,
 			options: options
 		});
@@ -28,7 +29,7 @@ describe('Title block tests', function() {
 		var minSize = title.update(400, 200);
 
 		expect(minSize).toEqual({
-			width: 400,
+			width: 0,
 			height: 0
 		});
 
@@ -50,7 +51,7 @@ describe('Title block tests', function() {
 		options.text = 'My title';
 		options.position = 'left';
 
-		var title = new Chart.Title({
+		var title = new Title({
 			chart: chart,
 			options: options
 		});
@@ -59,7 +60,7 @@ describe('Title block tests', function() {
 
 		expect(minSize).toEqual({
 			width: 0,
-			height: 400
+			height: 0
 		});
 
 		// Now we have a height since we display
@@ -82,7 +83,7 @@ describe('Title block tests', function() {
 		options.display = true;
 		options.lineHeight = 1.5;
 
-		var title = new Chart.Title({
+		var title = new Title({
 			chart: chart,
 			options: options
 		});
@@ -102,7 +103,7 @@ describe('Title block tests', function() {
 		var options = Chart.helpers.clone(Chart.defaults.global.title);
 		options.text = 'My title';
 
-		var title = new Chart.Title({
+		var title = new Title({
 			chart: chart,
 			options: options,
 			ctx: context
@@ -136,6 +137,9 @@ describe('Title block tests', function() {
 			name: 'rotate',
 			args: [0]
 		}, {
+			name: 'setTextAlign',
+			args: ['center'],
+		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
 		}, {
@@ -152,7 +156,7 @@ describe('Title block tests', function() {
 		options.text = 'My title';
 		options.position = 'left';
 
-		var title = new Chart.Title({
+		var title = new Title({
 			chart: chart,
 			options: options,
 			ctx: context
@@ -186,6 +190,9 @@ describe('Title block tests', function() {
 			name: 'rotate',
 			args: [-0.5 * Math.PI]
 		}, {
+			name: 'setTextAlign',
+			args: ['center'],
+		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]
 		}, {
@@ -218,6 +225,9 @@ describe('Title block tests', function() {
 		}, {
 			name: 'rotate',
 			args: [0.5 * Math.PI]
+		}, {
+			name: 'setTextAlign',
+			args: ['center'],
 		}, {
 			name: 'fillText',
 			args: ['My title', 0, 0, 400]

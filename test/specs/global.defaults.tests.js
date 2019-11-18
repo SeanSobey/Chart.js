@@ -1,4 +1,3 @@
-// Test the bubble chart default config
 describe('Default Configs', function() {
 	describe('Bubble Chart', function() {
 		it('should return correct tooltip strings', function() {
@@ -19,7 +18,7 @@ describe('Default Configs', function() {
 			});
 
 			// fake out the tooltip hover and force the tooltip to update
-			chart.tooltip._active = [chart.getDatasetMeta(0).data[0]];
+			chart.tooltip._active = [{element: chart.getDatasetMeta(0).data[0], datasetIndex: 0, index: 0}];
 			chart.tooltip.update();
 
 			// Title is always blank
@@ -47,7 +46,7 @@ describe('Default Configs', function() {
 			});
 
 			// fake out the tooltip hover and force the tooltip to update
-			chart.tooltip._active = [chart.getDatasetMeta(0).data[1]];
+			chart.tooltip._active = [{element: chart.getDatasetMeta(0).data[1], datasetIndex: 0, index: 1}];
 			chart.tooltip.update();
 
 			// Title is always blank
@@ -73,7 +72,7 @@ describe('Default Configs', function() {
 			});
 
 			// fake out the tooltip hover and force the tooltip to update
-			chart.tooltip._active = [chart.getDatasetMeta(0).data[1]];
+			chart.tooltip._active = [{element: chart.getDatasetMeta(0).data[1], datasetIndex: 0, index: 1}];
 			chart.tooltip.update();
 
 			// Title is always blank
@@ -103,7 +102,7 @@ describe('Default Configs', function() {
 				options: config
 			});
 
-			var expectedLegend = '<ul class="' + chart.id + '-legend"><li><span style="background-color:red"></span>label1</li><li><span style="background-color:green"></span>label2</li></ul>';
+			var expectedLegend = '<ul class="' + chart.id + '-legend"><li><span style="background-color: red;"></span>label1</li><li><span style="background-color: green;"></span>label2</li></ul>';
 			expect(chart.generateLegend()).toBe(expectedLegend);
 		});
 
@@ -126,14 +125,14 @@ describe('Default Configs', function() {
 			var expected = [{
 				text: 'label1',
 				fillStyle: 'red',
-				hidden: false,
+				hidden: undefined,
 				index: 0,
 				strokeStyle: '#000',
 				lineWidth: 2
 			}, {
 				text: 'label2',
 				fillStyle: 'green',
-				hidden: false,
+				hidden: undefined,
 				index: 1,
 				strokeStyle: '#000',
 				lineWidth: 2
@@ -193,7 +192,7 @@ describe('Default Configs', function() {
 			});
 
 			// fake out the tooltip hover and force the tooltip to update
-			chart.tooltip._active = [chart.getDatasetMeta(0).data[1]];
+			chart.tooltip._active = [{element: chart.getDatasetMeta(0).data[1], datasetIndex: 0, index: 1}];
 			chart.tooltip.update();
 
 			// Title is always blank
@@ -219,7 +218,7 @@ describe('Default Configs', function() {
 				options: config
 			});
 
-			var expectedLegend = '<ul class="' + chart.id + '-legend"><li><span style="background-color:red"></span>label1</li><li><span style="background-color:green"></span>label2</li></ul>';
+			var expectedLegend = '<ul class="' + chart.id + '-legend"><li><span style="background-color: red;"></span>label1</li><li><span style="background-color: green;"></span>label2</li></ul>';
 			expect(chart.generateLegend()).toBe(expectedLegend);
 		});
 
@@ -242,14 +241,14 @@ describe('Default Configs', function() {
 			var expected = [{
 				text: 'label1',
 				fillStyle: 'red',
-				hidden: false,
+				hidden: undefined,
 				index: 0,
 				strokeStyle: '#000',
 				lineWidth: 2
 			}, {
 				text: 'label2',
 				fillStyle: 'green',
-				hidden: false,
+				hidden: undefined,
 				index: 1,
 				strokeStyle: '#000',
 				lineWidth: 2
